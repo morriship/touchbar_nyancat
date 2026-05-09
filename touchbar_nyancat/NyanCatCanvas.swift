@@ -11,31 +11,27 @@ import Cocoa
 class NyanCatCanvas: NSImageView {
     @objc var timer:Timer? = nil
 
-    @objc var imageLoaded:Bool = false;
-
     @objc var xPosition: CGFloat = -680 {
         didSet {
             self.frame = CGRect(x: xPosition, y: 0, width: 680, height: 30)
         }
     }
 
-    override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
-
-        // Drawing code here.
+    override func awakeFromNib() {
+        super.awakeFromNib()
         
         self.animates = true
+        self.canDrawSubviewsIntoLayer = true
         
-        if(self.timer == nil) {
+        self.loadLocalImage()
+        
+        if self.timer == nil {
             timer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(self.moveNyancat), userInfo: nil, repeats: true)
         }
+    }
 
-        if(!self.imageLoaded){
-            self.downloadImage()
-        }
-        
-        self.canDrawSubviewsIntoLayer = true
-//        self.frame = CGRect(x: xPosition, y: 0, width: 680, height: 30)
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
     }
     
     override func touchesBegan(with event: NSEvent) {
@@ -43,9 +39,6 @@ class NyanCatCanvas: NSImageView {
         //super.touchesBegan(with: event)
     }
     
-    override func didAddSubview(_ subview: NSView) {
-        
-    }
     
     var direction: CGFloat = 1
     @objc public func moveNyancat() {
@@ -57,25 +50,11 @@ class NyanCatCanvas: NSImageView {
         }
     }
 
-    @objc func downloadImage() {
-        
-        let url = URL(string: "https://i.imgur.com/7pgdK28.gif")
-
-        getDataFromUrl(url: url!) { (data, response, error)  in
-            guard let data = data, error == nil else { return }
-
-            DispatchQueue.main.async() { () -> Void in
-                self.image = NSImage(data: data)
-                self.imageLoaded = true;
-            }
+    func loadLocalImage() {
+        if let imagePath = Bundle.main.path(forResource: "nyancat", ofType: "gif"),
+           let data = try? Data(contentsOf: URL(fileURLWithPath: imagePath)) {
+            self.image = NSImage(data: data)
         }
-    }
-    
-    @objc func getDataFromUrl(url: URL, completion: @escaping (_ data: Data?, _  response: URLResponse?, _ error: Error?) -> Void) {
-        URLSession.shared.dataTask(with: url) {
-            (data, response, error) in
-            completion(data, response, error)
-            }.resume()
     }
     
 
@@ -88,8 +67,6 @@ class NyanCatCanvas: NSImageView {
             let dX = (current - previous)
             
             xPosition += dX
-        } else {
-            // Fallback on earlier versions
         }
     }
     
